@@ -1,0 +1,1014 @@
+{
+  "uid": "kubeflow-sdk",
+  "title": "Kubeflow SDK",
+  "description": "Client calls, TrainJob lifecycle and in-job training metrics.",
+  "tags": [
+    "kubeflow",
+    "opentelemetry"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "graphTooltip": 1,
+  "links": [
+    {
+      "title": "Jaeger",
+      "type": "link",
+      "url": "http://localhost:16686",
+      "targetBlank": true
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "trainjob",
+        "label": "Training job",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": {
+          "query": "label_values(kubeflow_training_metric, kubeflow_trainjob_name)",
+          "refId": "trainjob"
+        },
+        "definition": "label_values(kubeflow_training_metric, kubeflow_trainjob_name)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "sort": 1
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "type": "row",
+      "id": 1,
+      "title": "Client (kubeflow-sdk): what the SDK calls are doing",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Jobs submitted",
+      "description": "TrainJobs submitted with TrainerClient.train() in the time range.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum((last_over_time(kubeflow_trainjob_submitted_total[$__range]) - (last_over_time(kubeflow_trainjob_submitted_total[$__range] offset $__range) or last_over_time(kubeflow_trainjob_submitted_total[$__range]) * 0)))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "blue"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Jobs completed",
+      "description": "Jobs observed reaching Complete (counted once per job).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum((last_over_time(kubeflow_trainjob_finished_total{kubeflow_trainjob_status=\"Complete\"}[$__range]) - (last_over_time(kubeflow_trainjob_finished_total{kubeflow_trainjob_status=\"Complete\"}[$__range] offset $__range) or last_over_time(kubeflow_trainjob_finished_total{kubeflow_trainjob_status=\"Complete\"}[$__range]) * 0)))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Jobs failed",
+      "description": "Jobs observed reaching Failed.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum((last_over_time(kubeflow_trainjob_finished_total{kubeflow_trainjob_status=\"Failed\"}[$__range]) - (last_over_time(kubeflow_trainjob_finished_total{kubeflow_trainjob_status=\"Failed\"}[$__range] offset $__range) or last_over_time(kubeflow_trainjob_finished_total{kubeflow_trainjob_status=\"Failed\"}[$__range]) * 0)))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Job success rate",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum((last_over_time(kubeflow_trainjob_finished_total{kubeflow_trainjob_status=\"Complete\"}[$__range]) - (last_over_time(kubeflow_trainjob_finished_total{kubeflow_trainjob_status=\"Complete\"}[$__range] offset $__range) or last_over_time(kubeflow_trainjob_finished_total{kubeflow_trainjob_status=\"Complete\"}[$__range]) * 0))) / sum((last_over_time(kubeflow_trainjob_finished_total[$__range]) - (last_over_time(kubeflow_trainjob_finished_total[$__range] offset $__range) or last_over_time(kubeflow_trainjob_finished_total[$__range]) * 0)))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 0.8,
+                "color": "orange"
+              },
+              {
+                "value": 0.95,
+                "color": "green"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "0",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Client call error rate",
+      "description": "Share of TrainerClient calls that raised.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum((last_over_time(kubeflow_client_operation_duration_seconds_count{error_type!=\"\"}[$__range]) - (last_over_time(kubeflow_client_operation_duration_seconds_count{error_type!=\"\"}[$__range] offset $__range) or last_over_time(kubeflow_client_operation_duration_seconds_count{error_type!=\"\"}[$__range]) * 0))) / sum((last_over_time(kubeflow_client_operation_duration_seconds_count[$__range]) - (last_over_time(kubeflow_client_operation_duration_seconds_count[$__range] offset $__range) or last_over_time(kubeflow_client_operation_duration_seconds_count[$__range]) * 0)))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 0.01,
+                "color": "orange"
+              },
+              {
+                "value": 0.05,
+                "color": "red"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "0",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Job duration p50 / p95",
+      "description": "Creation to observed terminal status (as observed by the client).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum by (le) ((last_over_time(kubeflow_trainjob_duration_seconds_bucket[$__range]) - (last_over_time(kubeflow_trainjob_duration_seconds_bucket[$__range] offset $__range) or last_over_time(kubeflow_trainjob_duration_seconds_bucket[$__range]) * 0))))",
+          "legendFormat": "p50",
+          "instant": true,
+          "range": false,
+          "exemplar": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) ((last_over_time(kubeflow_trainjob_duration_seconds_bucket[$__range]) - (last_over_time(kubeflow_trainjob_duration_seconds_bucket[$__range] offset $__range) or last_over_time(kubeflow_trainjob_duration_seconds_bucket[$__range]) * 0))))",
+          "legendFormat": "p95",
+          "instant": true,
+          "range": false,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "blue"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "0",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Client call latency p95 by operation",
+      "description": "Dots are exemplars: click one to open that exact call's trace in Jaeger.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "15s",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, kubeflow_operation) ((last_over_time(kubeflow_client_operation_duration_seconds_bucket[$__rate_interval]) - (last_over_time(kubeflow_client_operation_duration_seconds_bucket[$__rate_interval] offset $__rate_interval) or last_over_time(kubeflow_client_operation_duration_seconds_bucket[$__rate_interval]) * 0))))",
+          "legendFormat": "{{kubeflow_operation}}",
+          "instant": false,
+          "range": true,
+          "exemplar": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Client calls by operation",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "15s",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum by (kubeflow_operation) ((last_over_time(kubeflow_client_operation_duration_seconds_count[$__interval]) - (last_over_time(kubeflow_client_operation_duration_seconds_count[$__interval] offset $__interval) or last_over_time(kubeflow_client_operation_duration_seconds_count[$__interval]) * 0)))",
+          "legendFormat": "{{kubeflow_operation}}",
+          "instant": false,
+          "range": true,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "fillOpacity": 60,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Jobs submitted and finished",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "15s",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum((last_over_time(kubeflow_trainjob_submitted_total[$__interval]) - (last_over_time(kubeflow_trainjob_submitted_total[$__interval] offset $__interval) or last_over_time(kubeflow_trainjob_submitted_total[$__interval]) * 0)))",
+          "legendFormat": "submitted",
+          "instant": false,
+          "range": true,
+          "exemplar": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "B",
+          "expr": "sum by (kubeflow_trainjob_status) ((last_over_time(kubeflow_trainjob_finished_total[$__interval]) - (last_over_time(kubeflow_trainjob_finished_total[$__interval] offset $__interval) or last_over_time(kubeflow_trainjob_finished_total[$__interval]) * 0)))",
+          "legendFormat": "{{kubeflow_trainjob_status}}",
+          "instant": false,
+          "range": true,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "fillOpacity": 60,
+            "showPoints": "auto",
+            "spanNulls": true
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Job startup p95 (created to running)",
+      "description": "Scheduling and queueing time before a job starts running.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "15s",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, kubeflow_backend) ((last_over_time(kubeflow_trainjob_startup_duration_seconds_bucket[$__rate_interval]) - (last_over_time(kubeflow_trainjob_startup_duration_seconds_bucket[$__rate_interval] offset $__rate_interval) or last_over_time(kubeflow_trainjob_startup_duration_seconds_bucket[$__rate_interval]) * 0))))",
+          "legendFormat": "{{kubeflow_backend}}",
+          "instant": false,
+          "range": true,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      }
+    },
+    {
+      "type": "row",
+      "id": 12,
+      "title": "Training jobs (kubeflow-trainjob): what happens inside each job",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Training loss",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "15s",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "kubeflow_training_metric{kubeflow_training_metric_name=\"loss\", kubeflow_trainjob_name=~\"$trainjob\"}",
+          "legendFormat": "{{kubeflow_trainjob_name}}",
+          "instant": false,
+          "range": true,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 22
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Training accuracy",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "15s",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "kubeflow_training_metric{kubeflow_training_metric_name=\"accuracy\", kubeflow_trainjob_name=~\"$trainjob\"}",
+          "legendFormat": "{{kubeflow_trainjob_name}}",
+          "instant": false,
+          "range": true,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Current epoch",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "max by (kubeflow_trainjob_name) (last_over_time(kubeflow_training_epoch{kubeflow_trainjob_name=~\"$trainjob\"}[$__range]))",
+          "legendFormat": "{{kubeflow_trainjob_name}}",
+          "instant": true,
+          "range": false,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "continuous-BlYlRd"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "id": 15,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 31
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Mean epoch time",
+      "description": "Slow outliers here are stragglers worth a look in Jaeger.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum by (kubeflow_trainjob_name) ((last_over_time(kubeflow_training_epoch_duration_seconds_sum{kubeflow_trainjob_name=~\"$trainjob\"}[$__range]) - (last_over_time(kubeflow_training_epoch_duration_seconds_sum{kubeflow_trainjob_name=~\"$trainjob\"}[$__range] offset $__range) or last_over_time(kubeflow_training_epoch_duration_seconds_sum{kubeflow_trainjob_name=~\"$trainjob\"}[$__range]) * 0))) / sum by (kubeflow_trainjob_name) ((last_over_time(kubeflow_training_epoch_duration_seconds_count{kubeflow_trainjob_name=~\"$trainjob\"}[$__range]) - (last_over_time(kubeflow_training_epoch_duration_seconds_count{kubeflow_trainjob_name=~\"$trainjob\"}[$__range] offset $__range) or last_over_time(kubeflow_training_epoch_duration_seconds_count{kubeflow_trainjob_name=~\"$trainjob\"}[$__range]) * 0)))",
+          "legendFormat": "{{kubeflow_trainjob_name}}",
+          "instant": true,
+          "range": false,
+          "exemplar": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "continuous-BlYlRd"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "id": 16,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 31
+      }
+    },
+    {
+      "type": "row",
+      "id": 17,
+      "title": "Traces",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Recent train() traces (click a trace ID to open it)",
+      "datasource": {
+        "type": "jaeger",
+        "uid": "jaeger"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "jaeger",
+            "uid": "jaeger"
+          },
+          "refId": "A",
+          "queryType": "search",
+          "service": "kubeflow-sdk",
+          "operation": "kubeflow.trainer.train",
+          "limit": 20
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "id": 18,
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      }
+    }
+  ]
+}

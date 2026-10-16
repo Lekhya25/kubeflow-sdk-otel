@@ -1,0 +1,16 @@
+# Metrics arrive over OTLP from the collector (--web.enable-otlp-receiver),
+# so there is nothing to scrape.
+
+global:
+  evaluation_interval: 5s
+
+otlp:
+  # Keep the familiar Prometheus names: dots -> underscores, unit and _total suffixes.
+  translation_strategy: UnderscoreEscapingWithSuffixes
+
+storage:
+  tsdb:
+    # Pushed samples can arrive slightly out of order (batching, retries).
+    out_of_order_time_window: 30m
+
+scrape_configs: []

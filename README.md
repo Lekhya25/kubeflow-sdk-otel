@@ -10,7 +10,7 @@ The Kubeflow SDK lets you submit and manage training jobs (`TrainerClient.train(
 - **Standard OpenTelemetry when on.** Spans and metrics go out over OTLP to any OpenTelemetry Collector, so they work with Jaeger, Prometheus, Grafana, or any vendor backend.
 - **Plays nicely with existing OpenTelemetry setups.** It never overrides your global providers, and can reuse them if you ask it to.
 
-> 🚧 Work in progress. Implemented so far: the core telemetry layer, `TrainerClient` instrumentation, and trace propagation into training jobs. Coming next: a Prometheus + Jaeger + Grafana stack. See [docs/architecture.md](docs/architecture.md).
+> 🚧 Work in progress. Implemented so far: the core telemetry layer, `TrainerClient` instrumentation, trace propagation into training jobs, and a Collector + Prometheus + Jaeger + Grafana stack. Coming next: a demo workload of real training jobs. See [docs/architecture.md](docs/architecture.md).
 
 ## Quick start
 
@@ -47,6 +47,21 @@ def my_train_fn():
 ```
 
 One trace then spans the notebook's `train()` call and every epoch of the job. See [docs/propagation.md](docs/propagation.md).
+
+## Observability stack
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d --wait
+python scripts/smoke_test.py      # sends telemetry and verifies it reached every backend
+```
+
+| | |
+|---|---|
+| **Grafana** dashboard "Kubeflow SDK" | http://localhost:3000 |
+| **Jaeger** traces | http://localhost:16686 |
+| **Prometheus** | http://localhost:9090 |
+
+The OpenTelemetry Collector receives OTLP on `localhost:4317` and fans out traces to Jaeger and metrics to Prometheus (pushed over OTLP, so exemplars survive). The Grafana dashboard covers client latency and errors, the job lifecycle, and per-job training curves, and latency points link straight to their traces. See [docs/observability-stack.md](docs/observability-stack.md).
 
 ## Install
 
@@ -88,7 +103,8 @@ telemetry.meter.create_counter("my.events").add(1)
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 pytest
-ruff check src tests && ruff format --check src tests
+ruff check src tests scripts && ruff format --check src tests scripts
+python scripts/build_dashboard.py --check   # dashboard JSON matches its generator
 ```
 
 ## License

@@ -1,0 +1,49 @@
+# OpenTelemetry Collector: one OTLP entry point, fanned out to the backends.
+#   traces  -> Jaeger      (OTLP/gRPC)
+#   metrics -> Prometheus  (OTLP/HTTP, Prometheus' native OTLP receiver)
+#
+# Metrics are pushed to Prometheus rather than exposed for scraping: the
+# scrape-based `prometheus` exporter keeps only the latest point per series, so
+# an exemplar (metric -> trace link) vanishes as soon as an export arrives with
+# no new measurement. Pushing stores every data point with its exemplars.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  batch: {}
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  otlphttp/prometheus:
+    endpoint: http://prometheus:9090/api/v1/otlp  # "/v1/metrics" is appended
+    tls:
+      insecure: true
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/prometheus]
