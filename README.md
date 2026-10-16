@@ -6,7 +6,7 @@
 
 The Kubeflow SDK lets you submit and manage training jobs (`TrainerClient.train()`, `wait_for_job_status()`, ...) from Python, but gives no visibility into what those calls do, how long they take, or how the training jobs behave once they start. This library adds that visibility **without modifying the SDK**:
 
-- **Off by default, free when off.** The core has no required dependencies. Until telemetry is enabled, every instrument is a no-op and OpenTelemetry is never imported.
+- **Off by default, free when off.** The core has no required dependencies. Until telemetry is enabled, every instrument is a no-op and OpenTelemetry is never imported. [Measured](docs/performance.md): under 0.4 µs per client call and 19 ms of import time.
 - **Standard OpenTelemetry when on.** Spans and metrics go out over OTLP to any OpenTelemetry Collector, so they work with Jaeger, Prometheus, Grafana, or any vendor backend.
 - **Plays nicely with existing OpenTelemetry setups.** It never overrides your global providers, and can reuse them if you ask it to.
 
@@ -16,7 +16,7 @@ The Kubeflow SDK lets you submit and manage training jobs (`TrainerClient.train(
 
 *A sweep of six real PyTorch jobs submitted through the Kubeflow SDK ([demo](docs/demo.md)): three run in parallel per batch, each with its epochs as child spans. The diverged job is red, and the large model's run is twice as long. The gap between each `train()` call and its job's first span is environment setup, which turned out to take most of each job's time.*
 
-> 🚧 Work in progress: an overhead benchmark is next. See [docs/architecture.md](docs/architecture.md) for the design.
+See [docs/architecture.md](docs/architecture.md) for the design.
 
 ## Quick start
 
@@ -79,6 +79,16 @@ Runs a six-trial PyTorch hyperparameter sweep through the Kubeflow SDK's local-p
 
 ![Grafana dashboard after a demo run](docs/images/grafana-dashboard.png)
 
+## Performance
+
+| | Telemetry off (default) | Telemetry on |
+|---|---|---|
+| Per client call | +0.3–0.4 µs | 1.4–2.3× the cost of one bare OpenTelemetry span + metric (~67–190 µs) |
+| Per training epoch | +3.6 µs | ~95 µs |
+| Import | +19 ms, no OpenTelemetry imported | +179 ms once |
+
+Measured with [`benchmarks/overhead.py`](benchmarks/overhead.py); methodology in [docs/performance.md](docs/performance.md).
+
 ## Documentation
 
 | | |
@@ -88,6 +98,7 @@ Runs a six-trial PyTorch hyperparameter sweep through the Kubeflow SDK's local-p
 | [Tracing into jobs](docs/propagation.md) | Context propagation and `training_run()` |
 | [Observability stack](docs/observability-stack.md) | Collector, Jaeger, Prometheus, Grafana; exemplars; counting correctly |
 | [Demo](docs/demo.md) | The sweep, its results, and SDK issues found |
+| [Performance](docs/performance.md) | Measured overhead with telemetry off and on, and methodology |
 
 ## Install
 
@@ -129,7 +140,7 @@ telemetry.meter.create_counter("my.events").add(1)
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 pytest
-ruff check src tests scripts examples && ruff format --check src tests scripts examples
+ruff check src tests scripts examples benchmarks && ruff format --check src tests scripts examples benchmarks
 python scripts/build_dashboard.py --check   # dashboard JSON matches its generator
 ```
 
