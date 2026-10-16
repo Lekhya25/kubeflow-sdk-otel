@@ -12,23 +12,27 @@ This document explains how `kubeflow-sdk-otel` is put together and why.
 ## Layers
 
 ```
-            user code / notebooks
-                    │
-     ┌──────────────▼───────────────┐
-     │  instrumentation             │  wraps TrainerClient methods; adds spans,
-     │  kubeflow_otel.instrumentation│  attributes, metrics, context propagation
-     └──────────────┬───────────────┘
-                    │ depends only on the interfaces below
-     ┌──────────────▼───────────────┐
-     │  kubeflow_otel.api           │  Tracer / Span / Meter / instruments
-     │  NoOp* implementations       │  (abstract base classes + no-ops)
-     └──────────────┬───────────────┘
-                    │ selected at runtime by kubeflow_otel.telemetry
-     ┌──────────────▼───────────────┐
-     │  kubeflow_otel._otel         │  OpenTelemetry adapters + providers
-     │  (lazy import, optional dep) │  + OTLP/console export pipelines
-     └──────────────────────────────┘
+   client process (notebook / script)            training process (TrainJob)
+   ──────────────────────────────────            ───────────────────────────
+     user code                                     user's train function
+        │                                                 │
+   ┌────▼──────────────────────┐   trainer.env    ┌───────▼──────────────────┐
+   │ instrumentation           │ ───────────────▶ │ training                 │
+   │ wraps TrainerClient;      │  TRACEPARENT,    │ training_run(): job root │
+   │ spans + client metrics    │  collector cfg   │ span, epochs, metrics    │
+   └────┬──────────────────────┘  (propagation)   └───────┬──────────────────┘
+        │        both depend only on the interfaces below │
+   ┌────▼────────────────────────────────────────────────▼──────────────────┐
+   │ kubeflow_otel.api: Tracer / Span / Meter / instruments + NoOp* defaults │
+   └────┬───────────────────────────────────────────────────────────────────┘
+        │ selected at runtime by kubeflow_otel.telemetry
+   ┌────▼───────────────────────────────────────────────────────────────────┐
+   │ kubeflow_otel._otel: OpenTelemetry adapters, providers, OTLP export     │
+   │ (lazy import, optional dependency)                                      │
+   └────────────────────────────────────────────────────────────────────────┘
 ```
+
+See [instrumentation.md](instrumentation.md) for the client side and [propagation.md](propagation.md) for the job side.
 
 ### `kubeflow_otel.api`: interfaces and no-ops
 

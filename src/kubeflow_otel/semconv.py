@@ -24,8 +24,23 @@ LOGS_LINES = "kubeflow.logs.lines"
 RESULT_COUNT = "kubeflow.result.count"
 ERROR_TYPE = "error.type"  # OpenTelemetry semantic convention
 
+TRAINING_EPOCH = "kubeflow.training.epoch"
+TRAINING_RANK = "kubeflow.training.rank"
+TRAINING_WORLD_SIZE = "kubeflow.training.world_size"
+TRAINING_METRIC_NAME = "kubeflow.training.metric.name"
+
 # -------------------------------------------------------------------- events
 EVENT_STATUS_CHANGE = "kubeflow.trainjob.status_change"
+EVENT_TRAINING_METRICS = "kubeflow.training.metrics"
+
+# --------------------------------------------- environment passed to TrainJobs
+# W3C Trace Context carried in environment variables (OpenTelemetry
+# "environment variables as context propagation carriers" convention).
+ENV_TRACEPARENT = "TRACEPARENT"
+ENV_TRACESTATE = "TRACESTATE"
+ENV_TRAINJOB_NAME = "KUBEFLOW_TRAINJOB_NAME"
+ENV_RUNTIME_NAME = "KUBEFLOW_RUNTIME_NAME"
+DEFAULT_JOB_SERVICE_NAME = "kubeflow-trainjob"
 
 # ------------------------------------------------------------------- metrics
 METRIC_OPERATION_DURATION = "kubeflow.client.operation.duration"
@@ -33,6 +48,9 @@ METRIC_JOBS_SUBMITTED = "kubeflow.trainjob.submitted"
 METRIC_JOBS_FINISHED = "kubeflow.trainjob.finished"
 METRIC_JOB_DURATION = "kubeflow.trainjob.duration"
 METRIC_JOB_STARTUP = "kubeflow.trainjob.startup.duration"
+METRIC_TRAINING_METRIC = "kubeflow.training.metric"
+METRIC_TRAINING_EPOCH = "kubeflow.training.epoch"
+METRIC_EPOCH_DURATION = "kubeflow.training.epoch.duration"
 
 # Bucket boundaries in seconds. Client calls range from milliseconds (local
 # lookups) to minutes (wait_for_job_status); jobs from seconds to hours.
@@ -41,6 +59,7 @@ OPERATION_BUCKETS = (
 )  # fmt: skip
 JOB_DURATION_BUCKETS = (1, 5, 10, 30, 60, 120, 300, 600, 1800, 3600, 7200, 21600, 86400)
 JOB_STARTUP_BUCKETS = (0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600, 1800)
+EPOCH_BUCKETS = (0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600, 1800, 3600)
 
 # ------------------------------------------------------------ job statuses
 # Mirrors kubeflow.trainer.constants (TRAINJOB_*); asserted equal in tests.

@@ -10,7 +10,7 @@ The Kubeflow SDK lets you submit and manage training jobs (`TrainerClient.train(
 - **Standard OpenTelemetry when on.** Spans and metrics go out over OTLP to any OpenTelemetry Collector, so they work with Jaeger, Prometheus, Grafana, or any vendor backend.
 - **Plays nicely with existing OpenTelemetry setups.** It never overrides your global providers, and can reuse them if you ask it to.
 
-> 🚧 Work in progress. Implemented so far: the core telemetry layer and `TrainerClient` instrumentation. Coming next: trace propagation into training jobs, and a Prometheus + Jaeger + Grafana stack. See [docs/architecture.md](docs/architecture.md).
+> 🚧 Work in progress. Implemented so far: the core telemetry layer, `TrainerClient` instrumentation, and trace propagation into training jobs. Coming next: a Prometheus + Jaeger + Grafana stack. See [docs/architecture.md](docs/architecture.md).
 
 ## Quick start
 
@@ -30,6 +30,23 @@ KUBEFLOW_OTEL_ENABLED=true OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 pyt
 ```
 
 Every `TrainerClient` call now produces a span (with job status transitions recorded as events while waiting), and the client emits latency, submission, completion and job-duration metrics. See [docs/instrumentation.md](docs/instrumentation.md) for the full list.
+
+### Continue the trace inside the training job
+
+The client passes its trace context to the job through `trainer.env`. Inside the training function:
+
+```python
+def my_train_fn():
+    from kubeflow_otel.training import training_run
+
+    with training_run() as run:              # joins the trace started by client.train()
+        for epoch in range(3):
+            with run.epoch(epoch):           # one child span per epoch
+                loss = ...
+                run.log_metrics({"loss": loss})
+```
+
+One trace then spans the notebook's `train()` call and every epoch of the job. See [docs/propagation.md](docs/propagation.md).
 
 ## Install
 

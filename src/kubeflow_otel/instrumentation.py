@@ -14,6 +14,8 @@ attribute check before delegating to the original method.
 
 from __future__ import annotations
 
+import copy
+import dataclasses
 import functools
 import inspect
 import logging
@@ -27,6 +29,7 @@ from typing import Any
 
 from kubeflow_otel import api
 from kubeflow_otel import semconv as sc
+from kubeflow_otel.propagation import job_environment, merge_job_environment
 from kubeflow_otel.telemetry import Telemetry, get_telemetry
 
 logger = logging.getLogger(__name__)
@@ -279,7 +282,8 @@ class _Spec:
     operation: str
     before: Callable[[_CallContext], dict[str, Any] | None] | None = None
     after: Callable[[_CallContext, Any], None] | None = None
-    prepare: Callable[[_CallContext], tuple[tuple[Any, ...], dict[str, Any]]] | None = None
+    # returns replacement (args, kwargs) for the call, or None to leave them unchanged
+    prepare: Callable[[_CallContext], tuple[tuple[Any, ...], dict[str, Any]] | None] | None = None
     streams: bool = False
 
     @property
@@ -405,6 +409,29 @@ def _train_before(ctx: _CallContext) -> dict[str, Any]:
     return attrs
 
 
+def _train_prepare(ctx: _CallContext) -> tuple[tuple[Any, ...], dict[str, Any]] | None:
+    """Give the job the current trace context via a *copy* of ``trainer.env``."""
+    assert ctx.bound is not None
+    telemetry = ctx.inst.telemetry
+    trainer = ctx.arg("trainer")
+    if not telemetry.config.propagate_to_jobs or trainer is None or not hasattr(trainer, "env"):
+        return None  # e.g. BuiltinTrainer has no env
+
+    injected = job_environment(
+        telemetry,
+        job_name=_option_job_name(ctx.arg("options")),
+        runtime_name=_runtime_name(ctx.arg("runtime")),
+    )
+    env = merge_job_environment(trainer.env, injected)
+    if dataclasses.is_dataclass(trainer):
+        trainer_copy = dataclasses.replace(trainer, env=env)
+    else:
+        trainer_copy = copy.copy(trainer)
+        trainer_copy.env = env
+    ctx.bound.arguments["trainer"] = trainer_copy
+    return ctx.bound.args, ctx.bound.kwargs
+
+
 def _train_after(ctx: _CallContext, job_name: Any) -> None:
     if ctx.span is not None and isinstance(job_name, str):
         ctx.span.set_attribute(sc.TRAINJOB_NAME, job_name)
@@ -502,7 +529,7 @@ def _logs_before(ctx: _CallContext) -> dict[str, Any]:
 
 
 _SPECS: dict[str, _Spec] = {
-    "train": _Spec("train", before=_train_before, after=_train_after),
+    "train": _Spec("train", before=_train_before, after=_train_after, prepare=_train_prepare),
     "get_job": _Spec("get_job", before=_name_before, after=_job_after),
     "list_jobs": _Spec("list_jobs", before=_list_jobs_before, after=_list_jobs_after),
     "wait_for_job_status": _Spec(
