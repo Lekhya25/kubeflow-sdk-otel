@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kubeflow-sdk-otel"
+dynamic = ["version"]
+description = "OpenTelemetry tracing and metrics for the Kubeflow SDK, with a zero-cost no-op default"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Lekhyasree Medarametla", email = "lekhyam11@gmail.com" }]
+keywords = ["kubeflow", "opentelemetry", "observability", "tracing", "metrics", "mlops"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Topic :: System :: Monitoring",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# The core has no required dependencies: with telemetry disabled nothing extra is imported.
+dependencies = []
+
+[project.optional-dependencies]
+otel = [
+  "opentelemetry-api>=1.27",
+  "opentelemetry-sdk>=1.27",
+  "opentelemetry-exporter-otlp-proto-grpc>=1.27",
+]
+kubeflow = ["kubeflow>=0.5.0"]
+dev = [
+  "kubeflow-sdk-otel[otel,kubeflow]",
+  "pytest>=8",
+  "pytest-cov>=5",
+  "ruff>=0.6",
+]
+
+[project.urls]
+Source = "https://github.com/Lekhya25/kubeflow-sdk-otel"
+
+[tool.hatch.version]
+path = "src/kubeflow_otel/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kubeflow_otel"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

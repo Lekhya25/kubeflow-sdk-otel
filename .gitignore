@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local demo / benchmark scratch output
+*.log
+wheelhouse/
+
+# Personal study notes are never committed
+LEARNING*.md
+learning/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
