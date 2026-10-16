@@ -29,6 +29,7 @@ otel = [
   "opentelemetry-exporter-otlp-proto-grpc>=1.27",
 ]
 kubeflow = ["kubeflow>=0.5.0"]
+docs = ["playwright>=1.40"]  # scripts/screenshots.py
 dev = [
   "kubeflow-sdk-otel[otel,kubeflow]",
   "pytest>=8",

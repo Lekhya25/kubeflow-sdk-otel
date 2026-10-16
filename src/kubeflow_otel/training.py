@@ -51,6 +51,12 @@ class TrainingRun:
             description="Wall-clock duration of training epochs.",
             boundaries=sc.EPOCH_BUCKETS,
         )
+        self._startup = meter.create_histogram(
+            sc.METRIC_TRAINING_STARTUP,
+            unit="s",
+            description="Time from client submission until the training code started.",
+            boundaries=sc.JOB_STARTUP_BUCKETS,
+        )
         self.current_epoch: int | None = None
 
     def epoch(self, epoch: int) -> _EpochScope:
@@ -135,12 +141,33 @@ def training_run(
     if sc.TRAINING_RANK in attributes:
         labels[sc.TRAINING_RANK] = attributes[sc.TRAINING_RANK]
 
+    delay = _startup_delay_seconds(env)
+    if delay is not None:
+        attributes[sc.TRAINING_STARTUP_DELAY] = delay
+
     span = telemetry.tracer.start_span(
         name, kind="server", attributes=attributes, parent_carrier=carrier_from_env(env) or None
     )
     try:
         with span:
-            yield TrainingRun(telemetry, span, labels)
+            run = TrainingRun(telemetry, span, labels)
+            if delay is not None:
+                run._startup.record(delay, labels)
+            yield run
     finally:
         if flush:
             force_flush()
+
+
+def _startup_delay_seconds(env: Mapping[str, str]) -> float | None:
+    """Seconds from client submission to training code starting.
+
+    Covers scheduling, image pulls and dependency installation. Compares the
+    client's clock with the job's, so it assumes reasonably synchronized clocks
+    (always true for the local backend; NTP-synced nodes on Kubernetes).
+    """
+    raw = env.get(sc.ENV_SUBMIT_TIME, "")
+    if not raw.isdigit():
+        return None
+    delay = (time.time_ns() - int(raw)) / 1e9
+    return round(delay, 3) if delay >= 0 else None

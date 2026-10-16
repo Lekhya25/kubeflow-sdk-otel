@@ -10,6 +10,7 @@ collector. The job side reads them back with :func:`carrier_from_env`.
 from __future__ import annotations
 
 import os
+import time
 from collections.abc import Mapping
 
 from kubeflow_otel import semconv as sc
@@ -34,6 +35,7 @@ def job_environment(
     env = {_ENV_KEYS[k]: v for k, v in carrier.items() if k in _ENV_KEYS}
 
     config = telemetry.config
+    env[sc.ENV_SUBMIT_TIME] = str(time.time_ns())
     env["KUBEFLOW_OTEL_ENABLED"] = "true"
     env["KUBEFLOW_OTEL_EXPORTER"] = config.exporter
     env["OTEL_SERVICE_NAME"] = sc.DEFAULT_JOB_SERVICE_NAME

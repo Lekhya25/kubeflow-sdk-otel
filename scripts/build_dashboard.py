@@ -135,6 +135,7 @@ def timeseries(
     description: str = "",
     bars: bool = False,
     stack: bool = False,
+    log_scale: bool = False,
 ) -> dict:
     custom: dict = {
         "drawStyle": "bars" if bars else "line",
@@ -145,6 +146,8 @@ def timeseries(
     }
     if stack:
         custom["stacking"] = {"mode": "normal", "group": "A"}
+    if log_scale:
+        custom["scaleDistribution"] = {"type": "log", "log": 10}
     return {
         "type": "timeseries",
         "title": title,
@@ -153,7 +156,13 @@ def timeseries(
         "interval": "15s",
         "targets": targets,
         "fieldConfig": {
-            "defaults": {"unit": unit, "custom": custom, "color": {"mode": "palette-classic"}},
+            "defaults": {
+                "unit": unit,
+                "custom": custom,
+                "color": {"mode": "palette-classic"},
+                # without explicit decimals, log-axis ticks like 0.01 render as "0"
+                **({"decimals": 3} if log_scale and unit == "short" else {}),
+            },
             "overrides": [],
         },
         "options": {
@@ -195,6 +204,8 @@ def build() -> dict:
     job = 'kubeflow_trainjob_name=~"$trainjob"'
     epoch_sum = "kubeflow_training_epoch_duration_seconds_sum{" + job + "}"
     epoch_count = "kubeflow_training_epoch_duration_seconds_count{" + job + "}"
+    startup_sum = "kubeflow_training_startup_duration_seconds_sum{" + job + "}"
+    startup_count = "kubeflow_training_startup_duration_seconds_count{" + job + "}"
 
     # ------------------------------------------------------------------ client
     lay.row("Client (kubeflow-sdk): what the SDK calls are doing")
@@ -298,7 +309,9 @@ def build() -> dict:
                 )
             ],
             unit="s",
-            description="Dots are exemplars: click one to open that exact call's trace in Jaeger.",
+            log_scale=True,  # waits take minutes, lookups take milliseconds
+            description="Dots are exemplars: click one to open that exact call's trace in "
+            "Jaeger. Log scale, because waits take minutes and lookups milliseconds.",
         ),
         12,
         8,
@@ -336,7 +349,7 @@ def build() -> dict:
     )
     lay.add(
         timeseries(
-            "Job startup p95 (created to running)",
+            "Job startup p95, client-observed (created to running)",
             [
                 target(
                     p_quantile(
@@ -349,7 +362,8 @@ def build() -> dict:
                 )
             ],
             unit="s",
-            description="Scheduling and queueing time before a job starts running.",
+            description="When wait_for_job_status first saw the job Running. Inflated when "
+            "jobs are waited on one after another; 'Time to first epoch' below is exact.",
         ),
         12,
         8,
@@ -362,10 +376,14 @@ def build() -> dict:
             "Training loss",
             [
                 target(
-                    f'kubeflow_training_metric{{kubeflow_training_metric_name="loss", {job}}}',
+                    # short lookback: pushed series get no staleness marker when a job
+                    # exits, so the default 5m lookback would draw a flat tail
+                    "last_over_time(kubeflow_training_metric"
+                    f'{{kubeflow_training_metric_name="loss", {job}}}[30s])',
                     "{{kubeflow_trainjob_name}}",
                 )
             ],
+            log_scale=True,  # one diverging run must not flatten the others
         ),
         12,
         9,
@@ -375,7 +393,8 @@ def build() -> dict:
             "Training accuracy",
             [
                 target(
-                    f'kubeflow_training_metric{{kubeflow_training_metric_name="accuracy", {job}}}',
+                    "last_over_time(kubeflow_training_metric"
+                    f'{{kubeflow_training_metric_name="accuracy", {job}}}[30s])',
                     "{{kubeflow_trainjob_name}}",
                 )
             ],
@@ -396,7 +415,26 @@ def build() -> dict:
                 )
             ],
         ),
-        12,
+        8,
+        8,
+    )
+    lay.add(
+        bargauge(
+            "Time to first epoch",
+            [
+                target(
+                    f"sum by (kubeflow_trainjob_name) (last_over_time({startup_sum}[$__range]))"
+                    " / sum by (kubeflow_trainjob_name) "
+                    f"(last_over_time({startup_count}[$__range]))",
+                    "{{kubeflow_trainjob_name}}",
+                    instant=True,
+                )
+            ],
+            unit="s",
+            description="Submission until the training code started: scheduling, image pulls "
+            "and dependency installation. Measured inside the job.",
+        ),
+        8,
         8,
     )
     lay.add(
@@ -413,7 +451,7 @@ def build() -> dict:
             unit="s",
             description="Slow outliers here are stragglers worth a look in Jaeger.",
         ),
-        12,
+        8,
         8,
     )
 

@@ -10,7 +10,13 @@ The Kubeflow SDK lets you submit and manage training jobs (`TrainerClient.train(
 - **Standard OpenTelemetry when on.** Spans and metrics go out over OTLP to any OpenTelemetry Collector, so they work with Jaeger, Prometheus, Grafana, or any vendor backend.
 - **Plays nicely with existing OpenTelemetry setups.** It never overrides your global providers, and can reuse them if you ask it to.
 
-> 🚧 Work in progress. Implemented so far: the core telemetry layer, `TrainerClient` instrumentation, trace propagation into training jobs, and a Collector + Prometheus + Jaeger + Grafana stack. Coming next: a demo workload of real training jobs. See [docs/architecture.md](docs/architecture.md).
+- **One trace from notebook to training job.** Trace context travels into each TrainJob, so a single trace runs from `client.train()` through every epoch of the job.
+
+![A hyperparameter sweep of six real training jobs as one trace in Jaeger](docs/images/jaeger-sweep-trace.png)
+
+*A sweep of six real PyTorch jobs submitted through the Kubeflow SDK ([demo](docs/demo.md)): three run in parallel per batch, each with its epochs as child spans. The diverged job is red, and the large model's run is twice as long. The gap between each `train()` call and its job's first span is environment setup, which turned out to take most of each job's time.*
+
+> 🚧 Work in progress: an overhead benchmark is next. See [docs/architecture.md](docs/architecture.md) for the design.
 
 ## Quick start
 
@@ -63,6 +69,26 @@ python scripts/smoke_test.py      # sends telemetry and verifies it reached ever
 
 The OpenTelemetry Collector receives OTLP on `localhost:4317` and fans out traces to Jaeger and metrics to Prometheus (pushed over OTLP, so exemplars survive). The Grafana dashboard covers client latency and errors, the job lifecycle, and per-job training curves, and latency points link straight to their traces. See [docs/observability-stack.md](docs/observability-stack.md).
 
+## Demo: real training jobs
+
+```bash
+docker compose -f deploy/docker-compose.yml --profile demo run --rm demo
+```
+
+Runs a six-trial PyTorch hyperparameter sweep through the Kubeflow SDK's local-process backend, with one trial that diverges and one deliberate straggler. See [docs/demo.md](docs/demo.md) for what it showed, including two issues it surfaced in the SDK itself.
+
+![Grafana dashboard after a demo run](docs/images/grafana-dashboard.png)
+
+## Documentation
+
+| | |
+|---|---|
+| [Architecture](docs/architecture.md) | Layers, design decisions, testing strategy |
+| [Instrumentation](docs/instrumentation.md) | Every span, attribute and client metric |
+| [Tracing into jobs](docs/propagation.md) | Context propagation and `training_run()` |
+| [Observability stack](docs/observability-stack.md) | Collector, Jaeger, Prometheus, Grafana; exemplars; counting correctly |
+| [Demo](docs/demo.md) | The sweep, its results, and SDK issues found |
+
 ## Install
 
 ```bash
@@ -103,7 +129,7 @@ telemetry.meter.create_counter("my.events").add(1)
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 pytest
-ruff check src tests scripts && ruff format --check src tests scripts
+ruff check src tests scripts examples && ruff format --check src tests scripts examples
 python scripts/build_dashboard.py --check   # dashboard JSON matches its generator
 ```
 

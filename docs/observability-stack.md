@@ -66,15 +66,18 @@ That's the value at the end of the window minus the value at its start, or minus
 
 **Client (kubeflow-sdk)**
 - Jobs submitted, completed and failed; job success rate; client call error rate; job duration p50/p95 (stat panels over the selected range).
-- Client call latency p95 by operation, **with exemplars**.
+- Client call latency p95 by operation, **with exemplars**, on a log scale (waits take minutes, lookups milliseconds).
 - Client calls by operation (stacked bars per interval).
 - Jobs submitted and finished per interval.
-- Job startup p95 (created → running) by backend.
+- Job startup p95 as observed by the client (created → first seen running). It's inflated when jobs are waited on one after another; the job-side *Time to first epoch* is exact.
 
 **Training jobs (kubeflow-trainjob)**, filterable by the *Training job* variable:
 - Training loss and accuracy per job.
 - Current epoch per job.
 - Mean epoch time per job (stragglers stand out).
+- Time to first epoch per job (environment setup overhead, measured inside the job).
+
+Loss uses a log scale so one diverging run can't flatten the others. Loss and accuracy are queried with `last_over_time(...[30s])`. Pushed series get no staleness marker when a job exits, so the default 5-minute lookback would draw each finished job's last value as a flat line for 5 minutes.
 
 **Traces**
 - A table of recent `train()` traces from Jaeger; each trace ID links into the trace view.

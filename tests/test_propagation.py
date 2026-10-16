@@ -196,3 +196,31 @@ def test_job_in_a_separate_process_joins_the_trace(otel, instrumentor, client, b
     assert trace_ids == {format(client_span.context.trace_id, "032x")}
     assert format(client_span.context.span_id, "016x") in parent_ids
     assert '"kubeflow.trainjob.name": "run-7"' in out.stdout  # from OTEL_RESOURCE_ATTRIBUTES
+
+
+def test_job_reports_time_from_submission_to_first_code(otel, instrumentor, client, backend):
+    import time
+
+    submit(client)
+    (job_env,) = backend.received_envs
+    assert job_env[sc.ENV_SUBMIT_TIME].isdigit()
+
+    # pretend the job spent 5 s on scheduling and dependency installation
+    job_env = {**job_env, sc.ENV_SUBMIT_TIME: str(time.time_ns() - 5_000_000_000)}
+    with training_run(environ=job_env):
+        pass
+
+    run_span = next(s for s in otel.finished_spans() if s.name == "kubeflow.trainjob.run")
+    assert 5.0 <= run_span.attributes[sc.TRAINING_STARTUP_DELAY] < 6.0
+    (startup,) = otel.metric_points(sc.METRIC_TRAINING_STARTUP)
+    assert startup.count == 1 and 5.0 <= startup.sum < 6.0
+    assert startup.attributes == {sc.TRAINJOB_NAME: "run-7"}
+
+
+@pytest.mark.parametrize("raw", ["", "not-a-number", str(10**30)])
+def test_missing_or_bad_submit_time_is_ignored(otel, raw):
+    with training_run(environ={sc.ENV_SUBMIT_TIME: raw}):
+        pass
+    (span,) = otel.finished_spans()
+    assert sc.TRAINING_STARTUP_DELAY not in span.attributes
+    assert otel.metric_points(sc.METRIC_TRAINING_STARTUP) == []

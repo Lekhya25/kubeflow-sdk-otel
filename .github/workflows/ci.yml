@@ -14,8 +14,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install ruff
-      - run: ruff check src tests scripts
-      - run: ruff format --check src tests scripts
+      - run: ruff check src tests scripts examples
+      - run: ruff format --check src tests scripts examples
       - name: Grafana dashboard matches its generator
         run: python scripts/build_dashboard.py --check
 

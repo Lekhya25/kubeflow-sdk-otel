@@ -42,6 +42,20 @@ services:
       - "9090:9090"
     restart: unless-stopped
 
+  # Real training jobs through the Kubeflow SDK (opt-in):
+  #   docker compose -f deploy/docker-compose.yml --profile demo run --rm demo
+  demo:
+    profiles: ["demo"]
+    build:
+      context: ..
+      dockerfile: examples/demo/Dockerfile
+    environment:
+      KUBEFLOW_OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_METRIC_EXPORT_INTERVAL: "2000"
+    depends_on:
+      - otel-collector
+
   grafana:
     image: grafana/grafana:12.0.2
     environment:

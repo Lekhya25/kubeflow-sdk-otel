@@ -28,6 +28,7 @@ TRAINING_EPOCH = "kubeflow.training.epoch"
 TRAINING_RANK = "kubeflow.training.rank"
 TRAINING_WORLD_SIZE = "kubeflow.training.world_size"
 TRAINING_METRIC_NAME = "kubeflow.training.metric.name"
+TRAINING_STARTUP_DELAY = "kubeflow.training.startup_delay"
 
 # -------------------------------------------------------------------- events
 EVENT_STATUS_CHANGE = "kubeflow.trainjob.status_change"
@@ -40,6 +41,7 @@ ENV_TRACEPARENT = "TRACEPARENT"
 ENV_TRACESTATE = "TRACESTATE"
 ENV_TRAINJOB_NAME = "KUBEFLOW_TRAINJOB_NAME"
 ENV_RUNTIME_NAME = "KUBEFLOW_RUNTIME_NAME"
+ENV_SUBMIT_TIME = "KUBEFLOW_OTEL_SUBMIT_TIME_NS"  # client clock, Unix epoch nanoseconds
 DEFAULT_JOB_SERVICE_NAME = "kubeflow-trainjob"
 
 # ------------------------------------------------------------------- metrics
@@ -51,6 +53,7 @@ METRIC_JOB_STARTUP = "kubeflow.trainjob.startup.duration"
 METRIC_TRAINING_METRIC = "kubeflow.training.metric"
 METRIC_TRAINING_EPOCH = "kubeflow.training.epoch"
 METRIC_EPOCH_DURATION = "kubeflow.training.epoch.duration"
+METRIC_TRAINING_STARTUP = "kubeflow.training.startup.duration"
 
 # Bucket boundaries in seconds. Client calls range from milliseconds (local
 # lookups) to minutes (wait_for_job_status); jobs from seconds to hours.
