@@ -10,7 +10,26 @@ The Kubeflow SDK lets you submit and manage training jobs (`TrainerClient.train(
 - **Standard OpenTelemetry when on.** Spans and metrics go out over OTLP to any OpenTelemetry Collector, so they work with Jaeger, Prometheus, Grafana, or any vendor backend.
 - **Plays nicely with existing OpenTelemetry setups.** It never overrides your global providers, and can reuse them if you ask it to.
 
-> 🚧 Work in progress. Implemented so far: the core telemetry layer. Coming next: `TrainerClient` instrumentation, trace propagation into training jobs, and a Prometheus + Jaeger + Grafana stack. See [docs/architecture.md](docs/architecture.md).
+> 🚧 Work in progress. Implemented so far: the core telemetry layer and `TrainerClient` instrumentation. Coming next: trace propagation into training jobs, and a Prometheus + Jaeger + Grafana stack. See [docs/architecture.md](docs/architecture.md).
+
+## Quick start
+
+```python
+from kubeflow.trainer import CustomTrainer, LocalProcessBackendConfig, TrainerClient
+from kubeflow_otel import TrainerClientInstrumentor
+
+TrainerClientInstrumentor().instrument()   # or: import kubeflow_otel.auto
+
+client = TrainerClient(backend_config=LocalProcessBackendConfig())
+job = client.train(runtime="torch-distributed", trainer=CustomTrainer(func=my_train_fn))
+client.wait_for_job_status(job)
+```
+
+```bash
+KUBEFLOW_OTEL_ENABLED=true OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 python train.py
+```
+
+Every `TrainerClient` call now produces a span (with job status transitions recorded as events while waiting), and the client emits latency, submission, completion and job-duration metrics. See [docs/instrumentation.md](docs/instrumentation.md) for the full list.
 
 ## Install
 

@@ -6,6 +6,7 @@ Telemetry is off by default and costs almost nothing while off. Enable it with
 
 from kubeflow_otel._version import __version__
 from kubeflow_otel.config import TelemetryConfig
+from kubeflow_otel.instrumentation import TrainerClientInstrumentor
 from kubeflow_otel.telemetry import (
     Telemetry,
     configure,
@@ -17,6 +18,7 @@ from kubeflow_otel.telemetry import (
 __all__ = [
     "Telemetry",
     "TelemetryConfig",
+    "TrainerClientInstrumentor",
     "__version__",
     "configure",
     "force_flush",

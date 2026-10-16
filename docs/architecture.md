@@ -7,7 +7,7 @@ This document explains how `kubeflow-sdk-otel` is put together and why.
 1. **Zero impact when disabled.** Most SDK users will never turn telemetry on. For them the library must add no dependencies, no imports of OpenTelemetry, and negligible per-call overhead.
 2. **Standard when enabled.** Emit plain OpenTelemetry (OTLP) so the data works with any collector and backend (Jaeger, Prometheus, Grafana, vendors).
 3. **Never break the host application.** Bad configuration, a missing collector, or a missing optional dependency degrades telemetry to no-op. It never raises into user code.
-4. **No changes to the Kubeflow SDK.** Instrumentation wraps the public client API from outside, so it works with released SDK versions.
+4. **No changes to the Kubeflow SDK.** Instrumentation wraps the public client API from outside, so it works with released SDK versions. See [instrumentation.md](instrumentation.md).
 
 ## Layers
 
@@ -15,7 +15,7 @@ This document explains how `kubeflow-sdk-otel` is put together and why.
             user code / notebooks
                     │
      ┌──────────────▼───────────────┐
-     │  instrumentation (planned)   │  wraps TrainerClient methods; adds spans,
+     │  instrumentation             │  wraps TrainerClient methods; adds spans,
      │  kubeflow_otel.instrumentation│  attributes, metrics, context propagation
      └──────────────┬───────────────┘
                     │ depends only on the interfaces below
