@@ -1,0 +1,27 @@
+# A ClusterTrainingRuntime like Kubeflow Trainer's default torch-distributed runtime,
+# but using the small CPU image built from examples/kubernetes/Dockerfile.
+apiVersion: trainer.kubeflow.org/v1alpha1
+kind: ClusterTrainingRuntime
+metadata:
+  name: torch-otel
+  labels:
+    trainer.kubeflow.org/framework: torch
+spec:
+  mlPolicy:
+    numNodes: 1
+    torch: {}
+  template:
+    spec:
+      replicatedJobs:
+        - name: node
+          template:
+            metadata:
+              labels:
+                trainer.kubeflow.org/trainjob-ancestor-step: trainer
+            spec:
+              template:
+                spec:
+                  containers:
+                    - name: node
+                      image: kubeflow-sdk-otel-runtime:0.1.0
+                      imagePullPolicy: IfNotPresent  # loaded into kind, never pulled

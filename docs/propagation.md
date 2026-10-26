@@ -88,7 +88,10 @@ An exception raised inside an epoch marks both the epoch and the run span `ERROR
 
 ## Running on Kubernetes
 
-The job exports to `OTEL_EXPORTER_OTLP_ENDPOINT`. On Kubernetes, that endpoint must be reachable **from the training pods**, not just from your laptop: typically an in-cluster collector such as `http://otel-collector.observability:4317`. Set it on the client (the value is forwarded) or directly in `trainer.env`.
+Verified on a local kind cluster with Kubeflow Trainer v2.3.0; see [kubernetes.md](kubernetes.md) for the full setup and results. Two things differ from the local backend:
+
+- **The collector address differs between the client and the pods.** The client usually reaches an in-cluster collector through `kubectl port-forward` (`localhost:4317`), but pods must use cluster DNS (`otel-collector.observability.svc.cluster.local:4317`). The client's endpoint is forwarded by default, so set the pods' endpoint in `trainer.env`. User-set values win over injected ones, except for the trace context.
+- **`func_args` is passed differently.** The Kubernetes backend calls `train(**func_args)` (keyword arguments), while the local-process backend calls `train(func_args)` (one dict). A function meant for both should accept both: `def train(params=None, **kwargs): params = params or kwargs`.
 
 ## Time to first epoch
 

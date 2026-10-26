@@ -79,6 +79,15 @@ Runs a six-trial PyTorch hyperparameter sweep through the Kubeflow SDK's local-p
 
 ![Grafana dashboard after a demo run](docs/images/grafana-dashboard.png)
 
+## On Kubernetes
+
+The same propagation is verified on the SDK's **Kubernetes backend**: a real `TrainJob` on a local kind cluster running Kubeflow Trainer v2.3.0, with an in-cluster OpenTelemetry Collector and Jaeger. One trace spans the client's `train()` and the training pod's run and epochs. See [docs/kubernetes.md](docs/kubernetes.md).
+
+```bash
+bash examples/kubernetes/setup.sh   # kind cluster + Kubeflow Trainer + collector + Jaeger
+python examples/kubernetes/run_on_kind.py
+```
+
 ## Performance
 
 | | Telemetry off (default) | Telemetry on |
@@ -98,6 +107,7 @@ Measured with [`benchmarks/overhead.py`](benchmarks/overhead.py); methodology in
 | [Tracing into jobs](docs/propagation.md) | Context propagation and `training_run()` |
 | [Observability stack](docs/observability-stack.md) | Collector, Jaeger, Prometheus, Grafana; exemplars; counting correctly |
 | [Demo](docs/demo.md) | The sweep, its results, and SDK issues found |
+| [Kubernetes](docs/kubernetes.md) | A traced TrainJob on a kind cluster with Kubeflow Trainer v2.3.0 |
 | [Performance](docs/performance.md) | Measured overhead with telemetry off and on, and methodology |
 
 ## Install
